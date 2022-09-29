@@ -1546,7 +1546,14 @@ end
    
     jacobians = static_compatability_jacobians(properties)
 
-    @unpack ru_u1, ru_u2, ru_θ1, ru_θ2, rθ_θ1, rθ_θ2 = jacobians
+    @unpack ru1_u1, ru2_u2, ru1_θ1, ru1_θ2, ru2_θ1, ru2_θ2,
+            rθ1_θ1, rθ2_θ1, rθ1_θ2, rθ2_θ2 = jacobians
+    ru_u1 = ru1_u1
+    ru_u2 = ru2_u2
+    ru_θ1 = ru1_θ1 + ru2_θ1
+    ru_θ2 = ru1_θ2 + ru2_θ2
+    rθ_θ1 = rθ1_θ1 + rθ2_θ1
+    rθ_θ2 = rθ1_θ2 + rθ2_θ2
 
     @unpack Cab, CtCab, Qinv, γ_u1, γ_u2, γ_θ1, γ_θ2, γ_u1dot, γ_u2dot, κ_θ1, κ_θ2, κ_θ1dot, κ_θ2dot = properties
 
@@ -1575,7 +1582,14 @@ end
 
     @unpack Cab, CtCab, Qinv, γ_u1, γ_u2, γ_θ1, γ_θ2, γ_V1, γ_V2, γ_Ω1, γ_Ω2, κ_θ1, κ_θ2, κ_Ω1, κ_Ω2 = properties
 
-    @unpack ru_u1, ru_u2, ru_θ1, ru_θ2, rθ_θ1, rθ_θ2 = jacobians
+    @unpack ru1_u1, ru2_u2, ru1_θ1, ru1_θ2, ru2_θ1, ru2_θ2,
+            rθ1_θ1, rθ2_θ1, rθ1_θ2, rθ2_θ2 = jacobians
+    ru_u1 = ru1_u1
+    ru_u2 = ru2_u2
+    ru_θ1 = ru1_θ1 + ru2_θ1
+    ru_θ2 = ru1_θ2 + ru2_θ2
+    rθ_θ1 = rθ1_θ1 + rθ2_θ1
+    rθ_θ2 = rθ1_θ2 + rθ2_θ2
 
     ru_u1 -= CtCab*γ_u1
     ru_u2 -= CtCab*γ_u2
