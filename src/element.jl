@@ -1506,30 +1506,40 @@ end
     @unpack L, Cab, CtCab, Qinv, γ, κ, u1_u1, u2_u2, θ1_θ1, θ2_θ2, 
         γ_F, γ_M, κ_F, κ_M, C_θ1, C_θ2, C_θ3, Qinv_θ1, Qinv_θ2, Qinv_θ3 = properties
 
-    ru_u1 = -u1_u1
-    ru_u2 = u2_u2
+    ru1_u1 = -u1_u1
+    ru2_u2 = u2_u2
 
     Δu_θ = mul3(C_θ1', C_θ2', C_θ3', Cab*(L*e1 + γ))
-    ru_θ1 = -1/2*Δu_θ
-    ru_θ2 = -1/2*Δu_θ
+    ru1_θ1 = -1/4*Δu_θ
+    ru1_θ2 = -1/4*Δu_θ
+    ru2_θ1 = -1/4*Δu_θ
+    ru2_θ2 = -1/4*Δu_θ
     
     Δu_F = CtCab*γ_F
-    ru_F = -Δu_F
+    ru1_F = -1/2*Δu_F
+    ru2_F = -1/2*Δu_F
     
     Δu_M = CtCab*γ_M
-    ru_M = -Δu_M
+    ru1_M = -1/2*Δu_M
+    ru2_M = -1/2*Δu_M
 
     Δθ_θ = mul3(Qinv_θ1, Qinv_θ2, Qinv_θ3, Cab*κ)
-    rθ_θ1 = -I3 - 1/2*Δθ_θ
-    rθ_θ2 = I3 - 1/2*Δθ_θ
+    rθ1_θ1 = -I3 - 1/4*Δθ_θ
+    rθ2_θ1 = - 1/4*Δθ_θ
+    rθ1_θ2 = - 1/4*Δθ_θ
+    rθ2_θ2 = I3 - 1/4*Δθ_θ
     
     Δθ_F = Qinv*Cab*κ_F
-    rθ_F = -Δθ_F
+    rθ1_F = -1/2*Δθ_F
+    rθ2_F = -1/2*Δθ_F
     
     Δθ_M = Qinv*Cab*κ_M
-    rθ_M = -Δθ_M
+    rθ1_M = -1/2*Δθ_M
+    rθ2_M = -1/2*Δθ_M
 
-    return (; ru_u1, ru_u2, ru_θ1, ru_θ2, ru_F, ru_M, rθ_θ1, rθ_θ2, rθ_F, rθ_M)
+    return (; ru1_u1, ru2_u2, ru1_θ1, ru1_θ2, ru2_θ1, ru2_θ2,
+                ru1_F, ru2_F, ru1_M, ru2_M, rθ1_θ1, rθ2_θ1, rθ1_θ2, rθ2_θ2,
+                rθ1_F, rθ2_F, rθ1_M, rθ2_M)
 end
 
 @inline function initial_compatability_jacobians(properties)
@@ -2502,8 +2512,10 @@ end
 
     @unpack u1_u1, u2_u2, θ1_θ1, θ2_θ2 = properties
 
-    @unpack ru_u1, ru_u2, ru_θ1, ru_θ2, ru_F, ru_M, 
-                          rθ_θ1, rθ_θ2, rθ_F, rθ_M = compatability
+    @unpack ru1_u1, ru2_u2, ru1_θ1, ru1_θ2, ru2_θ1, ru2_θ2,
+            ru1_F, ru2_F, ru1_M, ru2_M, 
+            rθ1_θ1, rθ2_θ1, rθ1_θ2, rθ2_θ2, 
+            rθ1_F, rθ2_F, rθ1_M, rθ2_M = compatability
 
     @unpack F1_θ1, F1_θ2, F1_F,
             F2_θ1, F2_θ2, F2_F,
@@ -2517,21 +2529,21 @@ end
     # compatability equations
     irow = indices.irow_elem[ielem]
 
-    jacob[irow:irow+2, icol1:icol1+2] .= ru_u1*u1_u1
-    jacob[irow:irow+2, icol1+3:icol1+5] .= ru_θ1*θ1_θ1
+    jacob[irow:irow+2, icol1:icol1+2] .= ru1_u1*u1_u1
+    jacob[irow:irow+2, icol1+3:icol1+5] .= ru1_θ1*θ1_θ1 + ru2_θ1*θ1_θ1
 
-    jacob[irow:irow+2, icol2:icol2+2] .= ru_u2*u2_u2
-    jacob[irow:irow+2, icol2+3:icol2+5] .= ru_θ2*θ2_θ2
+    jacob[irow:irow+2, icol2:icol2+2] .= ru2_u2*u2_u2
+    jacob[irow:irow+2, icol2+3:icol2+5] .= ru1_θ2*θ2_θ2 + ru2_θ2*θ2_θ2
 
-    jacob[irow:irow+2, icol:icol+2] .= ru_F .* force_scaling
-    jacob[irow:irow+2, icol+3:icol+5] .= ru_M .* force_scaling
+    jacob[irow:irow+2, icol:icol+2] .= (ru1_F + ru2_F) .* force_scaling
+    jacob[irow:irow+2, icol+3:icol+5] .= (ru1_M + ru2_M) .* force_scaling
 
-    jacob[irow+3:irow+5, icol1+3:icol1+5] .= rθ_θ1*θ1_θ1
+    jacob[irow+3:irow+5, icol1+3:icol1+5] .= rθ1_θ1*θ1_θ1 + rθ2_θ1*θ1_θ1
 
-    jacob[irow+3:irow+5, icol2+3:icol2+5] .= rθ_θ2*θ2_θ2
+    jacob[irow+3:irow+5, icol2+3:icol2+5] .= rθ1_θ2*θ2_θ2 + rθ2_θ2*θ2_θ2
 
-    jacob[irow+3:irow+5, icol:icol+2] .= rθ_F .* force_scaling
-    jacob[irow+3:irow+5, icol+3:icol+5] .= rθ_M .* force_scaling
+    jacob[irow+3:irow+5, icol:icol+2] .= (rθ1_F + rθ2_F) .* force_scaling
+    jacob[irow+3:irow+5, icol+3:icol+5] .= (rθ1_M + rθ2_M) .* force_scaling
 
     # equilibrium equations for the start of the beam element
     irow1 = indices.irow_point[assembly.start[ielem]]
