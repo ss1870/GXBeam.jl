@@ -34,7 +34,7 @@ export set_end_forces!, set_end_moments!
 export set_point_linear_velocity!, set_point_angular_velocity!
 export set_element_linear_velocity!, set_element_angular_velocity!
 
-export Assembly
+export Joint, Assembly
 export curve_length, discretize_beam
 
 export PrescribedConditions, DistributedLoads, PointMass

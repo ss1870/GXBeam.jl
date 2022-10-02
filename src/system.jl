@@ -706,8 +706,8 @@ end
 
 Populate the system residual vector `resid` for a static analysis
 """
-function static_system_residual!(resid, x, indices, force_scaling, 
-    assembly, prescribed_conditions, distributed_loads, point_masses, gravity)
+function static_system_residual!(resid, x, indices, force_scaling, assembly,
+    joints, prescribed_conditions, distributed_loads, point_masses, gravity)
 
     for ipoint = 1:length(assembly.points)
         static_point_residual!(resid, x, indices, force_scaling, assembly, ipoint, 
@@ -717,6 +717,43 @@ function static_system_residual!(resid, x, indices, force_scaling,
     for ielem = 1:length(assembly.elements)
         static_element_residual!(resid, x, indices, force_scaling, assembly, ielem, 
             prescribed_conditions, distributed_loads, gravity)
+    end
+
+    # Modify residuals due to joints
+    for joint in joints
+        # For any joint between two disconnected points there are initially two
+        # equilibrium equations (two rows in the residual). To tie the joint DoFs,
+        # the first equi equation is replaced by the sum of the equilibrium residuals.
+        # The second equi equation is used to enforce equal displacement for the two points
+        # i.e. resid = u2 - u1 = 0
+        u1, θ1 = point_displacement(x, joint.pt1, indices.icol_point, prescribed_conditions)
+        u2, θ2 = point_displacement(x, joint.pt2, indices.icol_point, prescribed_conditions)
+        irow_p1 = indices.irow_point[joint.pt1]
+        irow_p2 = indices.irow_point[joint.pt2]
+        if joint.ux
+            resid[irow_p1] += resid[irow_p2]
+            resid[irow_p2] = u2[1] - u1[1]
+        end
+        if joint.uy
+            resid[irow_p1+1] += resid[irow_p2+1]
+            resid[irow_p2+1] = u2[2] - u1[2]
+        end
+        if joint.uz
+            resid[irow_p1+2] += resid[irow_p2+2]
+            resid[irow_p2+2] = u2[3] - u1[3]
+        end
+        if joint.rx
+            resid[irow_p1+3] += resid[irow_p2+3]
+            resid[irow_p2+3] = θ2[1] - θ1[1]
+        end
+        if joint.ry
+            resid[irow_p1+4] += resid[irow_p2+4]
+            resid[irow_p2+4] = θ2[2] - θ1[2]
+        end
+        if joint.rz
+            resid[irow_p1+5] += resid[irow_p2+5]
+            resid[irow_p2+5] = θ2[3] - θ1[3]
+        end
     end
 
     return resid
@@ -935,8 +972,8 @@ end
 
 Populate the system jacobian matrix `jacob` for a static analysis
 """
-function static_system_jacobian!(jacob, x, indices, force_scaling, 
-    assembly, prescribed_conditions, distributed_loads, point_masses, gravity)
+function static_system_jacobian!(jacob, x, indices, force_scaling, assembly,
+    joints, prescribed_conditions, distributed_loads, point_masses, gravity)
 
     jacob .= 0
 
@@ -948,6 +985,52 @@ function static_system_jacobian!(jacob, x, indices, force_scaling,
     for ielem = 1:length(assembly.elements)
         static_element_jacobian!(jacob, x, indices, force_scaling, assembly, ielem, 
             prescribed_conditions, distributed_loads, gravity)
+    end
+
+    # Modify jacobian due to joints
+    for joint in joints
+        u1_u1, θ1_θ1 = point_displacement_jacobians(joint.pt1, prescribed_conditions)
+        u2_u2, θ2_θ2 = point_displacement_jacobians(joint.pt2, prescribed_conditions)
+        irow_p1 = indices.irow_point[joint.pt1]
+        irow_p2 = indices.irow_point[joint.pt2]
+        icol_p1 = indices.icol_point[joint.pt1]
+        icol_p2 = indices.icol_point[joint.pt2]
+        if joint.ux
+            jacob[irow_p1,:] .+= jacob[irow_p2,:]
+            jacob[irow_p2, :] .= 0
+            jacob[irow_p2, icol_p1:icol_p1+2] .= - u1_u1[1,:]
+            jacob[irow_p2, icol_p2:icol_p2+2] .= u2_u2[1,:]
+        end
+        if joint.uy
+            jacob[irow_p1+1,:] .+= jacob[irow_p2+1,:]
+            jacob[irow_p2+1, :] .= 0
+            jacob[irow_p2+1, icol_p1:icol_p1+2] .= - u1_u1[2,:]
+            jacob[irow_p2+1, icol_p2:icol_p2+2] .= u2_u2[2,:]
+        end
+        if joint.uz
+            jacob[irow_p1+2,:] .+= jacob[irow_p2+2,:]
+            jacob[irow_p2+2, :] .= 0
+            jacob[irow_p2+2, icol_p1:icol_p1+2] .= - u1_u1[3,:]
+            jacob[irow_p2+2, icol_p2:icol_p2+2] .= u2_u2[3,:]
+        end
+        if joint.rx
+            jacob[irow_p1+3,:] .+= jacob[irow_p2+3,:]
+            jacob[irow_p2+3, :] .= 0
+            jacob[irow_p2+3, icol_p1+3:icol_p1+5] .= - θ1_θ1[1,:]
+            jacob[irow_p2+3, icol_p2+3:icol_p2+5] .= θ2_θ2[1,:]
+        end
+        if joint.ry
+            jacob[irow_p1+4,:] .+= jacob[irow_p2+4,:]
+            jacob[irow_p2+4, :] .= 0
+            jacob[irow_p2+4, icol_p1+3:icol_p1+5] .= - θ1_θ1[2,:]
+            jacob[irow_p2+4, icol_p2+3:icol_p2+5] .= θ2_θ2[2,:]
+        end
+        if joint.rz
+            jacob[irow_p1+5,:] .+= jacob[irow_p2+5,:]
+            jacob[irow_p2+5, :] .= 0
+            jacob[irow_p2+5, icol_p1+3:icol_p1+5] .= - θ1_θ1[3,:]
+            jacob[irow_p2+5, icol_p2+3:icol_p2+5] .= θ2_θ2[3,:]
+        end
     end
     
     return jacob

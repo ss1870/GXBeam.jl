@@ -37,6 +37,41 @@ function Element(L, x, compliance, mass, Cab, mu)
     TF = promote_type(typeof(L), eltype(x), eltype(compliance), eltype(mass), eltype(Cab), eltype(mu))
     return Element{TF}(L, x, compliance, mass, Cab, mu)
 end
+"""
+    Joint
+
+Composite type that defines a joint. A joint ties DoFs between two nodes.
+
+# Fields
+ - `pt1`: Point 1 to be joined
+ - `pt2`: Point 2 to be joined
+ - `ux`: Bool, if true, tie this DoF
+ - `uy`: Bool, if true, tie this DoF
+ - `uz`: Bool, if true, tie this DoF
+ - `rx`: Bool, if true, tie this DoF
+ - `ry`: Bool, if true, tie this DoF
+ - `rz`: Bool, if true, tie this DoF
+"""
+struct Joint
+    pt1::Integer
+    pt2::Integer
+    ux::Bool
+    uy::Bool
+    uz::Bool
+    rx::Bool
+    ry::Bool
+    rz::Bool
+end
+function Joint(pt1, pt2;
+    ux = false,
+    uy = false,
+    uz = false,
+    rx = false,
+    ry = false,
+    rz = false)
+    return Joint(pt1, pt2, ux, uy, uz, rx, ry, rz)
+end
+
 
 """
     Assembly{TF, TP<:AbstractVector{<:AbstractVector{TF}},

@@ -61,6 +61,7 @@ function static_analysis!(system::StaticSystem, assembly;
     # general keyword arguments
     prescribed_conditions=Dict{Int,PrescribedConditions{Float64}}(),
     distributed_loads=Dict{Int,DistributedLoads{Float64}}(),
+    joints=Vector{Joint}(),
     point_masses=Dict{Int,PointMass{Float64}}(),
     gravity=(@SVector zeros(3)),
     time=0.0,
@@ -108,10 +109,10 @@ function static_analysis!(system::StaticSystem, assembly;
 
         # define the residual and jacobian functions
         f! = (resid, x) -> static_system_residual!(resid, x, indices, force_scaling, 
-            assembly, pcond, dload, pmass, gvec)
+            assembly, joints, pcond, dload, pmass, gvec)
 
         j! = (jacob, x) -> static_system_jacobian!(jacob, x, indices, force_scaling, 
-            assembly, pcond, dload, pmass, gvec)
+            assembly, joints, pcond, dload, pmass, gvec)
 
         # solve for the new set of state variables
         if linear
