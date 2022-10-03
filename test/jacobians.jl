@@ -154,15 +154,16 @@ end
 
     system = StaticSystem(assembly)
     force_scaling = system.force_scaling
+    joints = Vector{Joint}()
     indices = system.indices
     x = 1e2 .* rand(RNG, length(system.x))
     J = similar(x, length(x), length(x))
 
     f = (x) -> GXBeam.static_system_residual!(similar(x), x, indices, force_scaling, 
-        assembly, pcond, dload, pmass, gvec)
+        assembly, joints, pcond, dload, pmass, gvec)
 
     GXBeam.static_system_jacobian!(J, x, indices, force_scaling,
-        assembly, pcond, dload, pmass, gvec)
+        assembly, joints, pcond, dload, pmass, gvec)
 
     J_fd = ForwardDiff.jacobian(f, x)
 
