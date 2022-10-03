@@ -45,6 +45,7 @@ Composite type that defines a joint. A joint ties DoFs between two nodes.
 # Fields
  - `pt1`: Point 1 to be joined
  - `pt2`: Point 2 to be joined
+ - `frame`: Transformation matrix from body frame to the joint frame
  - `ux`: Bool, if true, tie this DoF
  - `uy`: Bool, if true, tie this DoF
  - `uz`: Bool, if true, tie this DoF
@@ -55,6 +56,7 @@ Composite type that defines a joint. A joint ties DoFs between two nodes.
 struct Joint
     pt1::Integer
     pt2::Integer
+    frame::SMatrix{3,3,Float64,9}
     ux::Bool
     uy::Bool
     uz::Bool
@@ -62,14 +64,37 @@ struct Joint
     ry::Bool
     rz::Bool
 end
+"""
+    Joint(pt1, pt2; kwargs...)
+
+Construct a joint between pt1 and pt2. A joint defines specific translational/rotational
+DoFs to be equivalent. Typically, points are initially disconnected and coincident,
+although this is not enforced. The default frame for defining equivalent DoFs is the
+body frame. User-specified joint frames can also be defined.
+
+# Arguments
+ - `pt1`: Point ID 1 to be tied.
+ - `pt2`: Point ID 2 to be tied.
+
+# Keyword Arguments
+ - `frame`: 3 x 3 transformation matrix from body frame to joint frame. Defaults to
+        the Identity matrix i.e. joint frame == body frame.
+ - `ux`: Boolean, if true, then ux of joint frame or global frame is tied between points.
+ - `uy`: Boolean, if true, then uy of joint frame or global frame is tied between points.
+ - `uz`: Boolean, if true, then uz of joint frame or global frame is tied between points.
+ - `rx`: Boolean, if true, then rx of joint frame or global frame is tied between points.
+ - `ry`: Boolean, if true, then ry of joint frame or global frame is tied between points.
+ - `rz`: Boolean, if true, then rz of joint frame or global frame is tied between points.
+"""
 function Joint(pt1, pt2;
+    frame = I3,
     ux = false,
     uy = false,
     uz = false,
     rx = false,
     ry = false,
     rz = false)
-    return Joint(pt1, pt2, ux, uy, uz, rx, ry, rz)
+    return Joint(pt1, pt2, frame, ux, uy, uz, rx, ry, rz)
 end
 
 
