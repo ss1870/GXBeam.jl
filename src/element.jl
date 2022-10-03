@@ -1493,12 +1493,10 @@ Calculate the compatability residuals for the beam element
 
     Δθ = Qinv*Cab*κ
 
-    ru1 = - u1 - Δu/2
-    ru2 = u2 - Δu/2
-    rθ1 = - θ1 - Δθ/2
-    rθ2 = θ2 - Δθ/2
+    ru = u2 - u1 - Δu
+    rθ = θ2 - θ1 - Δθ
 
-    return (; ru1, ru2, rθ1, rθ2)
+    return (; ru, rθ)
 end
 
 @inline function static_compatability_jacobians(properties)
@@ -2447,13 +2445,13 @@ Insert the residual entries corresponding to a beam element into the system resi
 @inline function insert_element_residuals!(resid, indices, force_scaling, assembly, ielem, 
     compatability, resultants)
 
-    @unpack ru1, ru2, rθ1, rθ2 = compatability
+    @unpack ru, rθ = compatability
     @unpack F1, F2, M1, M2 = resultants
 
     # compatability equations
     irow = indices.irow_elem[ielem]
-    resid[irow:irow+2] .= ru1 + ru2
-    resid[irow+3:irow+5] .= rθ1 + rθ2
+    resid[irow:irow+2] .= ru
+    resid[irow+3:irow+5] .= rθ
 
     # equilibrium equations for the start of the beam element
     irow = indices.irow_point[assembly.start[ielem]]
