@@ -80,7 +80,7 @@ using GXBeam, LinearAlgebra, Statistics, Test
                 sin(pi/2)  cos(pi/2) 0;
                 0          0     1]         
     joints = [
-        Joint(nelem_b1 + 1, nelem_b1 + 2; frame=inv(jt_frame), ux=true, uy=true)
+        Joint(nelem_b1 + 1, nelem_b1 + 2; frame=jt_frame, ux=true, uy=true)
     ]
 
     # perform static analysis

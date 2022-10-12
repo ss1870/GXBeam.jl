@@ -77,8 +77,8 @@ body frame. User-specified joint frames can also be defined.
  - `pt2`: Point ID 2 to be tied.
 
 # Keyword Arguments
- - `frame`: 3 x 3 transformation matrix from body frame to joint frame. Defaults to
-        the Identity matrix i.e. joint frame == body frame.
+ - `frame`: 3 x 3 transformation matrix from undeformed joint frame to body frame. 
+        Defaults to the Identity matrix i.e. joint frame == body frame.
  - `ux`: Boolean, if true, then ux of joint frame or global frame is tied between points.
  - `uy`: Boolean, if true, then uy of joint frame or global frame is tied between points.
  - `uz`: Boolean, if true, then uz of joint frame or global frame is tied between points.

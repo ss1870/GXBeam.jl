@@ -730,23 +730,29 @@ function static_system_residual!(resid, x, indices, force_scaling, assembly,
         u2, θ2 = point_displacement(x, joint.pt2, indices.icol_point, prescribed_conditions)
         irow_p1 = indices.irow_point[joint.pt1]
         irow_p2 = indices.irow_point[joint.pt2]
-
+        
+        # Frame in which joint is defined should 'follow' the structure as it deforms
+        θ = (θ1 + θ2)/2
+        C = get_C(θ)
+        jt_rot = C'
         if joint.frame != I3
-            # Rotate equilibrium residuals into joint ref frame
-            resid[irow_p1:irow_p1+2] .= joint.frame * resid[irow_p1:irow_p1+2]
-            resid[irow_p1+3:irow_p1+5] .= joint.frame * resid[irow_p1+3:irow_p1+5]
-            resid[irow_p2:irow_p2+2] .= joint.frame * resid[irow_p2:irow_p2+2]
-            resid[irow_p2+3:irow_p2+5] .= joint.frame * resid[irow_p2+3:irow_p2+5]
-            # Rotate displacements into joint ref frame
-            if joint.ux || joint.uy || joint.uz
-                u1 = joint.frame * u1
-                u2 = joint.frame * u2
-            end
-            if joint.rx || joint.ry || joint.rz
-                θ1 = joint.frame * θ1
-                θ2 = joint.frame * θ2
-            end
+            jt_rot = inv(C' * joint.frame)
         end
+        # Rotate equilibrium residuals into joint ref frame
+        resid[irow_p1:irow_p1+2] .= jt_rot * resid[irow_p1:irow_p1+2]
+        resid[irow_p1+3:irow_p1+5] .= jt_rot * resid[irow_p1+3:irow_p1+5]
+        resid[irow_p2:irow_p2+2] .= jt_rot * resid[irow_p2:irow_p2+2]
+        resid[irow_p2+3:irow_p2+5] .= jt_rot * resid[irow_p2+3:irow_p2+5]
+        # Rotate displacements into joint ref frame
+        if joint.ux || joint.uy || joint.uz
+            u1 = jt_rot * u1
+            u2 = jt_rot * u2
+        end
+        if joint.rx || joint.ry || joint.rz
+            θ1 = jt_rot * θ1
+            θ2 = jt_rot * θ2
+        end
+
         if joint.ux
             resid[irow_p1] += resid[irow_p2]
             resid[irow_p2] = u2[1] - u1[1]
@@ -1006,28 +1012,38 @@ function static_system_jacobian!(jacob, x, indices, force_scaling, assembly,
 
     # Modify jacobian due to joints
     for joint in joints
+        u1, θ1 = point_displacement(x, joint.pt1, indices.icol_point, prescribed_conditions)
+        u2, θ2 = point_displacement(x, joint.pt2, indices.icol_point, prescribed_conditions)
         u1_u1, θ1_θ1 = point_displacement_jacobians(joint.pt1, prescribed_conditions)
         u2_u2, θ2_θ2 = point_displacement_jacobians(joint.pt2, prescribed_conditions)
         irow_p1 = indices.irow_point[joint.pt1]
         irow_p2 = indices.irow_point[joint.pt2]
         icol_p1 = indices.icol_point[joint.pt1]
         icol_p2 = indices.icol_point[joint.pt2]
+
+        # Frame in which joint is defined should 'follow' the structure as it deforms
+        θ = (θ1 + θ2)/2
+        C = get_C(θ)
+        jt_rot = C'
         if joint.frame != I3
-            # Rotate equilibrium jacob into joint ref frame
-            jacob[irow_p1:irow_p1+2,:] .= joint.frame * jacob[irow_p1:irow_p1+2,:]
-            jacob[irow_p1+3:irow_p1+5,:] .= joint.frame * jacob[irow_p1+3:irow_p1+5,:]
-            jacob[irow_p2:irow_p2+2,:] .= joint.frame * jacob[irow_p2:irow_p2+2,:]
-            jacob[irow_p2+3:irow_p2+5,:] .= joint.frame * jacob[irow_p2+3:irow_p2+5,:]
-            # Rotate displacements into joint ref frame
-            if joint.ux || joint.uy || joint.uz
-                u1_u1 = joint.frame * u2_u2
-                u2_u2 = joint.frame * u2_u2
-            end
-            if joint.rx || joint.ry || joint.rz
-                θ1_θ1 = joint.frame * θ1_θ1
-                θ2_θ2 = joint.frame * θ2_θ2
-            end
+            jt_rot = inv(C' * joint.frame)
         end
+
+        # Rotate equilibrium jacob into joint ref frame
+        jacob[irow_p1:irow_p1+2,:] .= jt_rot * jacob[irow_p1:irow_p1+2,:]
+        jacob[irow_p1+3:irow_p1+5,:] .= jt_rot * jacob[irow_p1+3:irow_p1+5,:]
+        jacob[irow_p2:irow_p2+2,:] .= jt_rot * jacob[irow_p2:irow_p2+2,:]
+        jacob[irow_p2+3:irow_p2+5,:] .= jt_rot * jacob[irow_p2+3:irow_p2+5,:]
+        # Rotate displacements into joint ref frame
+        if joint.ux || joint.uy || joint.uz
+            u1_u1 = jt_rot * u2_u2
+            u2_u2 = jt_rot * u2_u2
+        end
+        if joint.rx || joint.ry || joint.rz
+            θ1_θ1 = jt_rot * θ1_θ1
+            θ2_θ2 = jt_rot * θ2_θ2
+        end
+
         if joint.ux
             jacob[irow_p1,:] .+= jacob[irow_p2,:]
             jacob[irow_p2, :] .= 0
