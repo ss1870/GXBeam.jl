@@ -1036,7 +1036,7 @@ function static_system_jacobian!(jacob, x, indices, force_scaling, assembly,
         jacob[irow_p2+3:irow_p2+5,:] .= jt_rot * jacob[irow_p2+3:irow_p2+5,:]
         # Rotate displacements into joint ref frame
         if any(joint.jt_flag[1:3])
-            u1_u1 = jt_rot * u2_u2
+            u1_u1 = jt_rot * u1_u1
             u2_u2 = jt_rot * u2_u2
         end
         if any(joint.jt_flag[4:6])
