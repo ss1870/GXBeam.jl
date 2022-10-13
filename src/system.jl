@@ -744,38 +744,38 @@ function static_system_residual!(resid, x, indices, force_scaling, assembly,
         resid[irow_p2:irow_p2+2] .= jt_rot * resid[irow_p2:irow_p2+2]
         resid[irow_p2+3:irow_p2+5] .= jt_rot * resid[irow_p2+3:irow_p2+5]
         # Rotate displacements into joint ref frame
-        if joint.ux || joint.uy || joint.uz
+        if any(joint.jt_flag[1:3])
             u1 = jt_rot * u1
             u2 = jt_rot * u2
         end
-        if joint.rx || joint.ry || joint.rz
+        if any(joint.jt_flag[4:6])
             θ1 = jt_rot * θ1
             θ2 = jt_rot * θ2
         end
 
-        if joint.ux
+        if joint.jt_flag[1]
             resid[irow_p1] += resid[irow_p2]
-            resid[irow_p2] = u2[1] - u1[1]
+            resid[irow_p2] = u2[1] - u1[1] + joint.ux
         end
-        if joint.uy
+        if joint.jt_flag[2]
             resid[irow_p1+1] += resid[irow_p2+1]
-            resid[irow_p2+1] = u2[2] - u1[2]
+            resid[irow_p2+1] = u2[2] - u1[2] + joint.uy
         end
-        if joint.uz
+        if joint.jt_flag[3]
             resid[irow_p1+2] += resid[irow_p2+2]
-            resid[irow_p2+2] = u2[3] - u1[3]
+            resid[irow_p2+2] = u2[3] - u1[3] + joint.uz
         end
-        if joint.rx
+        if joint.jt_flag[4]
             resid[irow_p1+3] += resid[irow_p2+3]
-            resid[irow_p2+3] = θ2[1] - θ1[1]
+            resid[irow_p2+3] = θ2[1] - θ1[1] + joint.rx
         end
-        if joint.ry
+        if joint.jt_flag[5]
             resid[irow_p1+4] += resid[irow_p2+4]
-            resid[irow_p2+4] = θ2[2] - θ1[2]
+            resid[irow_p2+4] = θ2[2] - θ1[2] + joint.ry
         end
-        if joint.rz
+        if joint.jt_flag[6]
             resid[irow_p1+5] += resid[irow_p2+5]
-            resid[irow_p2+5] = θ2[3] - θ1[3]
+            resid[irow_p2+5] = θ2[3] - θ1[3] + joint.rz
         end
     end
 
@@ -1035,46 +1035,46 @@ function static_system_jacobian!(jacob, x, indices, force_scaling, assembly,
         jacob[irow_p2:irow_p2+2,:] .= jt_rot * jacob[irow_p2:irow_p2+2,:]
         jacob[irow_p2+3:irow_p2+5,:] .= jt_rot * jacob[irow_p2+3:irow_p2+5,:]
         # Rotate displacements into joint ref frame
-        if joint.ux || joint.uy || joint.uz
+        if any(joint.jt_flag[1:3])
             u1_u1 = jt_rot * u2_u2
             u2_u2 = jt_rot * u2_u2
         end
-        if joint.rx || joint.ry || joint.rz
+        if any(joint.jt_flag[4:6])
             θ1_θ1 = jt_rot * θ1_θ1
             θ2_θ2 = jt_rot * θ2_θ2
         end
 
-        if joint.ux
+        if joint.jt_flag[1]
             jacob[irow_p1,:] .+= jacob[irow_p2,:]
             jacob[irow_p2, :] .= 0
             jacob[irow_p2, icol_p1:icol_p1+2] .= - u1_u1[1,:]
             jacob[irow_p2, icol_p2:icol_p2+2] .= u2_u2[1,:]
         end
-        if joint.uy
+        if joint.jt_flag[2]
             jacob[irow_p1+1,:] .+= jacob[irow_p2+1,:]
             jacob[irow_p2+1, :] .= 0
             jacob[irow_p2+1, icol_p1:icol_p1+2] .= - u1_u1[2,:]
             jacob[irow_p2+1, icol_p2:icol_p2+2] .= u2_u2[2,:]
         end
-        if joint.uz
+        if joint.jt_flag[3]
             jacob[irow_p1+2,:] .+= jacob[irow_p2+2,:]
             jacob[irow_p2+2, :] .= 0
             jacob[irow_p2+2, icol_p1:icol_p1+2] .= - u1_u1[3,:]
             jacob[irow_p2+2, icol_p2:icol_p2+2] .= u2_u2[3,:]
         end
-        if joint.rx
+        if joint.jt_flag[4]
             jacob[irow_p1+3,:] .+= jacob[irow_p2+3,:]
             jacob[irow_p2+3, :] .= 0
             jacob[irow_p2+3, icol_p1+3:icol_p1+5] .= - θ1_θ1[1,:]
             jacob[irow_p2+3, icol_p2+3:icol_p2+5] .= θ2_θ2[1,:]
         end
-        if joint.ry
+        if joint.jt_flag[5]
             jacob[irow_p1+4,:] .+= jacob[irow_p2+4,:]
             jacob[irow_p2+4, :] .= 0
             jacob[irow_p2+4, icol_p1+3:icol_p1+5] .= - θ1_θ1[2,:]
             jacob[irow_p2+4, icol_p2+3:icol_p2+5] .= θ2_θ2[2,:]
         end
-        if joint.rz
+        if joint.jt_flag[6]
             jacob[irow_p1+5,:] .+= jacob[irow_p2+5,:]
             jacob[irow_p2+5, :] .= 0
             jacob[irow_p2+5, icol_p1+3:icol_p1+5] .= - θ1_θ1[3,:]

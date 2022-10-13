@@ -46,29 +46,32 @@ Composite type that defines a joint. A joint ties DoFs between two nodes.
  - `pt1`: Point 1 to be joined
  - `pt2`: Point 2 to be joined
  - `frame`: Transformation matrix from body frame to the joint frame
- - `ux`: Bool, if true, tie this DoF
- - `uy`: Bool, if true, tie this DoF
- - `uz`: Bool, if true, tie this DoF
- - `rx`: Bool, if true, tie this DoF
- - `ry`: Bool, if true, tie this DoF
- - `rz`: Bool, if true, tie this DoF
+ - `jt_flag`: Vector of flags defining whether each of the 6 DOFs are joined.
+ - `ux`: Float64, x distance between points in joint frame
+ - `uy`: Float64, y distance between points in joint frame
+ - `uz`: Float64, z distance between points in joint frame
+ - `rx`: Float64, x angle between points in joint frame
+ - `ry`: Float64, y angle between points in joint frame
+ - `rz`: Float64, z angle between points in joint frame
 """
 struct Joint
     pt1::Integer
     pt2::Integer
     frame::SMatrix{3,3,Float64,9}
-    ux::Bool
-    uy::Bool
-    uz::Bool
-    rx::Bool
-    ry::Bool
-    rz::Bool
+    jt_flag::SVector{6, Bool}
+    ux::Float64
+    uy::Float64
+    uz::Float64
+    rx::Float64
+    ry::Float64
+    rz::Float64
 end
 """
     Joint(pt1, pt2; kwargs...)
 
 Construct a joint between pt1 and pt2. A joint defines specific translational/rotational
-DoFs to be equivalent. Typically, points are initially disconnected and coincident,
+DoFs to be equivalent, or have some prescribed distance/angle between them 
+e.g. a joint rotation. Typically, points are initially disconnected and coincident,
 although this is not enforced. The default frame for defining equivalent DoFs is the
 body frame. User-specified joint frames can also be defined.
 
@@ -79,22 +82,60 @@ body frame. User-specified joint frames can also be defined.
 # Keyword Arguments
  - `frame`: 3 x 3 transformation matrix from undeformed joint frame to body frame. 
         Defaults to the Identity matrix i.e. joint frame == body frame.
- - `ux`: Boolean, if true, then ux of joint frame or global frame is tied between points.
- - `uy`: Boolean, if true, then uy of joint frame or global frame is tied between points.
- - `uz`: Boolean, if true, then uz of joint frame or global frame is tied between points.
- - `rx`: Boolean, if true, then rx of joint frame or global frame is tied between points.
- - `ry`: Boolean, if true, then ry of joint frame or global frame is tied between points.
- - `rz`: Boolean, if true, then rz of joint frame or global frame is tied between points.
+ - `ux`: Prescribed x distance between points in joint frame, 0 = coincident.
+ - `uy`: Prescribed y distance between points in joint frame, 0 = coincident.
+ - `uz`: Prescribed z distance between points in joint frame, 0 = coincident.
+ - `rx`: Prescribed x angle between points in joint frame, 0 = coincident.
+ - `ry`: Prescribed y angle between points in joint frame, 0 = coincident.
+ - `rz`: Prescribed z angle between points in joint frame, 0 = coincident.
 """
 function Joint(pt1, pt2;
     frame = I3,
-    ux = false,
-    uy = false,
-    uz = false,
-    rx = false,
-    ry = false,
-    rz = false)
-    return Joint(pt1, pt2, frame, ux, uy, uz, rx, ry, rz)
+    ux = nothing,
+    uy = nothing,
+    uz = nothing,
+    rx = nothing,
+    ry = nothing,
+    rz = nothing)
+    if isnothing(ux)
+        ux = NaN
+        xf = false
+    else
+        xf = true
+    end
+    if isnothing(uy)
+        uy = NaN
+        yf = false
+    else
+        yf = true
+    end
+    if isnothing(uz)
+        uz = NaN
+        zf = false
+    else
+        zf = true
+    end
+    if isnothing(rx)
+        rx = NaN
+        rxf = false
+    else
+        rxf = true
+    end
+    if isnothing(ry)
+        ry = NaN
+        ryf = false
+    else
+        ryf = true
+    end
+    if isnothing(rz)
+        rz = NaN
+        rzf = false
+    else
+        rzf = true
+    end
+    jt_flag = SVector(xf, yf, zf, rxf, ryf, rzf)
+
+    return Joint(pt1, pt2, frame, jt_flag, ux, uy, uz, rx, ry, rz)
 end
 
 
